@@ -7,4 +7,4 @@ ${CMAKE_CURRENT_SOURCE_DIR}/app.cpp)
 target_include_directories(apps PUBLIC 
 "${CMAKE_SOURCE_DIR}/include")
 
-target_link_libraries(apps PUBLIC lua fmt)
+target_link_libraries(apps PUBLIC lguma fmt)

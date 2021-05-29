@@ -1,12 +1,18 @@
 #pragma once
+#include <initializer_list>
 #include <string_view>
 #include <vector>
-#include <memory>
 
+template<typename T>
+using Vector = std::vector<T>;
 
+#define NON_COPY_CONSTRUCTABLE(Class)\
+  Class(const Class&) = delete;\
+  Class& operator=(const Class&) = delete; 
 class Stmt;
 class AstNode {
   public:
+    NON_COPY_CONSTRUCTABLE(AstNode);
     enum class Type {
       Chunck,
       FunctionDeclaration,
@@ -14,68 +20,127 @@ class AstNode {
       LetStmt,
       ReturnStmt,
       NumericLiteral,
+      BlockStmt,
+      ExprStmt,
+      FunctionCall,
     };
     Type type;
     // range
     AstNode(Type type):type{type}{}
 
+    virtual ~AstNode() = 0;
 };
 
 class Stmt: public AstNode {
     public:
     Stmt(AstNode::Type type):AstNode(type){}
+     ~Stmt() override;
 };
 class Expr: public AstNode {
     public:
     Expr(AstNode::Type type):AstNode(type){}
+    ~Expr() override;
+};
+class ExprStmt: public Stmt {
+    public:
+      Expr* expr;
+    ExprStmt(Expr* expr):
+      Stmt(AstNode::Type::ExprStmt),
+      expr{expr}{}
+     ~ExprStmt() override;
 };
 class Chunck: public AstNode {
   public: 
-    std::vector<std::unique_ptr<Stmt>> body;
+    Vector<Stmt*> body;
     Chunck():AstNode(AstNode::Type::Chunck){}
-    void push(std::unique_ptr<Stmt> stmt) {
-      body.push_back(std::move(stmt));
+    void push(Stmt* stmt) {
+      body.push_back(stmt);
     }
+    ~Chunck() override ;
 };
 
+class BlockStmt: public Stmt {
+  public: 
+    Vector<Stmt*> body;
+    BlockStmt():Stmt(AstNode::Type::BlockStmt){}
+    void push(Stmt* stmt) {
+      body.push_back(stmt);
+    }
+    ~BlockStmt() override ;
+};
 class Identifier: public Expr {
   public:
-    std::string_view name;
+    std::string_view value;
     Identifier(std::string_view name):
       Expr(AstNode::Type::Identifier),
-      name{name} {}
+      value{name} {}
+    ~Identifier() override;
 
+};
+
+class FunctionCall: public Expr {
+  public:
+    Vector<Expr*> args;
+    Identifier* name;
+    explicit FunctionCall(Identifier* name):
+      Expr{AstNode::Type::FunctionCall},
+      name{name}
+    {}
+    void push(Expr* arg) {
+      args.push_back(arg);
+    }
+    void push(std::initializer_list<Expr*> args_list) {
+       args.insert(args.end(), args_list.begin(), args_list.end());
+    }
+    void push(std::vector<Expr*> args_list) {
+        args.insert(args.end(), args_list.begin(), args_list.end());
+    }
+    ~FunctionCall() override;
 };
 class AwaitStmt: public Stmt {
 public:
-  std::unique_ptr<Stmt> statement;
+  Stmt* statement;
+    ~AwaitStmt() override;
 };
 
 class ExportStmt: public Stmt {
 public:
-  std::unique_ptr<Stmt> statement;
+  Stmt* statement;
+  ~ExportStmt() override;
+};
+class ArrayExpr: public Expr {
+public:
+  Vector<AstNode*>  elements;
+
+  void push(AstNode* node) {
+    elements.push_back(node);
+  }
+    ~ArrayExpr() override ;
 };
 
 class LetStmt: public Stmt {
   public: 
-    std::unique_ptr<Identifier> variable;
-    std::unique_ptr<Expr> init;
-    LetStmt(std::unique_ptr<Identifier> variable, std::unique_ptr<Expr> init = nullptr):
+    Identifier* variable;
+    Expr* init;
+    LetStmt(Identifier* variable, Expr* init = nullptr):
       Stmt(AstNode::Type::LetStmt),
-      variable{std::move(variable)},
-      init{std::move(init)}
+      variable{variable},
+      init{init}
        {}
+    ~LetStmt() override;
 
 };
 class ReturnStmt: public Stmt {
   public:
-    std::unique_ptr<Stmt> argument;
-    ReturnStmt(std::unique_ptr<Stmt> argument):
+    Expr* argument;
+    ReturnStmt(Expr* argument):
       Stmt(AstNode::Type::ReturnStmt),
-      argument{std::move(argument)} {
+      argument{argument} {
 
       }
+   ~ReturnStmt() override ;
 };
+
 class NumericLiteral: public Expr {
   public:
     std::string_view raw;
@@ -84,21 +149,23 @@ class NumericLiteral: public Expr {
       raw{raw} {
 
       }
+    ~NumericLiteral()override;
 };
 class FunctionDeclaration: public Stmt {
   public:
-    std::unique_ptr<Identifier> identifier;
-    std::vector<std::unique_ptr<Identifier>> parameters;
-    std::vector<Stmt> body;
+    Identifier* identifier;
+    Vector<Identifier*> parameters;
+    BlockStmt* body;
     bool is_async;
-    FunctionDeclaration(std::unique_ptr<Identifier> identifier,
-                        std::vector<std::unique_ptr<Identifier>> parameters,
-                        std::vector<Stmt> body,
+    FunctionDeclaration(Identifier* identifier,
+                        Vector<Identifier*>& parameters,
+                        BlockStmt* body,
                         bool is_async=false):
       Stmt(AstNode::Type::FunctionDeclaration),
-      identifier{std::move(identifier)},
+      identifier{identifier},
       parameters{std::move(parameters)},
       body{std::move(body)},
       is_async{is_async}
   {}
+  ~FunctionDeclaration() override;
 };

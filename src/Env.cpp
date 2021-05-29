@@ -1,10 +1,12 @@
 #include "Env.hpp"
+#include <fmt/core.h>
 
 
 bool Env::insert(const std::string_view key, Value *value)
 {
   if(m_map.contains(key))
     {
+      fmt::print("name already declared\n");
       return false;
     }else
     {

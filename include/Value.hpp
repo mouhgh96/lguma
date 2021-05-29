@@ -23,12 +23,7 @@ struct Value {
     bool b;
     number_type number;
   } obj;
-  Type type;
-  bool is_garbage_collected() const {
-    return type == Type::String || type == Type::Table ||
-        type == Type::Function;
-  }
-  GCObject* get_gc_object() const {
-    return obj.gc;
-  }
+  Type type{Nil};
+  bool is_garbage_collected() const ;
+  GCObject* get_gc_object() const ;
 };
