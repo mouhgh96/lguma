@@ -1,1 +1,0 @@
-/bin/g++ -g3 -fsanitize=address,undefined CMakeFiles/app.dir/main.cpp.o -o app  -lpthread -lfmt 

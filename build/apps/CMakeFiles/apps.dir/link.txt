@@ -1,1 +1,0 @@
-/bin/g++ -g3 -fsanitize=address,undefined CMakeFiles/apps.dir/app.cpp.o -o apps  -Wl,-rpath,/home/mohamed/projects/lua-cpp/build/src ../src/liblua.so -lfmt 
