@@ -1,0 +1,1 @@
+/bin/g++ -fPIC -g3 -fsanitize=address,undefined -shared -Wl,-soname,liblua.so -o liblua.so CMakeFiles/lua.dir/Vm.cpp.o 
